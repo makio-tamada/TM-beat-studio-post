@@ -13,6 +13,13 @@ TM Beat Studioは、LoFiヒップホップや勉強用BGMなどの長尺音楽�
 - **シェル**: zsh (/bin/zsh)
 - **アーキテクチャ**: Apple Silicon (ARM64)
 
+### 🎵 実際の成果物
+このツールで生成された動画は以下のYouTubeチャンネルで公開されています：
+
+**[TM Beat Studio - YouTube](https://www.youtube.com/@TMBeatStudio)**
+
+実際のLo-Fi音楽動画を確認して、ツールの出力品質をご覧ください。
+
 ### 🎯 主な機能
 - **自動音楽生成**: PiAPIを使用したLo-Fi音楽の自動生成
 - **サムネイル生成**: Stable Diffusionを使用した画像生成
@@ -354,4 +361,10 @@ python -m src.auto_post.auto_lofi_post
 
 ## 📞 サポート
 
-問題や質問がある場合は、GitHubのIssuesページでお知らせください。 
+問題や質問がある場合は、GitHubのIssuesページでお知らせください。
+
+## 🎵 実際の使用例
+
+このツールを使用して生成された動画は、**[TM Beat Studio YouTubeチャンネル](https://www.youtube.com/@TMBeatStudio)**で公開されています。
+
+実際のLo-Fi音楽動画を確認して、ツールの出力品質と可能性をご覧ください。 
