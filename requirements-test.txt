@@ -1,0 +1,16 @@
+# テスト用の依存関係
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+pytest-asyncio>=0.21.0
+coverage>=7.0.0
+
+# モック用ライブラリ
+responses>=0.23.0
+httpx>=0.24.0
+
+# テスト用の音声・動画処理ライブラリ
+pydub>=0.25.1
+
+# 既存の依存関係も含める
+-r requirements.txt
