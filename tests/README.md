@@ -246,6 +246,14 @@ export OPENAI_API_KEY="test_key"
 export GOOGLE_REFRESH_TOKEN="test_token"
 export GOOGLE_CLIENT_ID="test_id"
 export GOOGLE_CLIENT_SECRET="test_secret"
+export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/test/test/test"
+
+# ファイルパス設定（テスト用）
+export JSONL_PATH="data/type/lofi_type_with_variations.jsonl"
+export OPENING_VIDEO_PATH="data/openning/openning.mov"
+export AMBIENT_DIR="data/ambient"
+export CLIENT_SECRETS_PATH="data/json/client_secrets.json"
+export POST_DETAIL_PATH="data/post_data/post_detail.txt"
 ```
 
 ### テスト用依存関係
@@ -301,6 +309,7 @@ pydub>=0.25.1
 1. **インポートエラー**
    - `PYTHONPATH`の設定確認
    - `src/auto_post/__init__.py`の存在確認
+   - 循環インポートの確認（`config.py`の分離により解決済み）
 
 2. **モックエラー**
    - モックパスの確認（`auto_post.module.function`）
@@ -327,12 +336,23 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TESTING: true  # Slack通知無効化
+      PIAPI_KEY: "test_key"
+      OPENAI_API_KEY: "test_key"
+      GOOGLE_REFRESH_TOKEN: "test_token"
+      GOOGLE_CLIENT_ID: "test_id"
+      GOOGLE_CLIENT_SECRET: "test_secret"
+      SLACK_WEBHOOK_URL: "https://hooks.slack.com/services/test/test/test"
+      JSONL_PATH: "data/type/lofi_type_with_variations.jsonl"
+      OPENING_VIDEO_PATH: "data/openning/openning.mov"
+      AMBIENT_DIR: "data/ambient"
+      CLIENT_SECRETS_PATH: "data/json/client_secrets.json"
+      POST_DETAIL_PATH: "data/post_data/post_detail.txt"
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.10
       - name: Install dependencies
         run: |
           pip install -r requirements-test.txt
@@ -351,6 +371,7 @@ jobs:
 - [x] テストカバレッジ90%以上達成
 - [x] Slack通知の自動無効化機能実装
 - [x] 統合テストの追加
+- [x] 循環インポート問題の解決（`config.py`の分離）
 - [ ] パフォーマンステストの実装
 
 ### 中期目標
@@ -393,3 +414,4 @@ jobs:
 - `src/auto_post/__init__.py`の存在確認
 - `PYTHONPATH`の設定確認
 - 相対インポートの確認
+- 循環インポートの確認（`config.py`の分離により解決済み）

@@ -6,6 +6,13 @@ Lo-Fi音楽の自動生成とYouTube投稿を行うPythonアプリケーショ�
 
 TM Beat Studioは、LoFiヒップホップや勉強用BGMなどの長尺音楽動画を自動生成し、YouTubeにアップロードするためのツールです。
 
+### ✅ 動作確認済み環境
+- **OS**: macOS 14.6.0 (Darwin 24.6.0)
+- **Python**: 3.10.17
+- **パッケージマネージャー**: UV
+- **シェル**: zsh (/bin/zsh)
+- **アーキテクチャ**: Apple Silicon (ARM64)
+
 ### 🎯 主な機能
 - **自動音楽生成**: PiAPIを使用したLo-Fi音楽の自動生成
 - **サムネイル生成**: Stable Diffusionを使用した画像生成
@@ -25,6 +32,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # PATHの設定（~/.zshrcに追加）
 export PATH="$HOME/.local/bin:$PATH"
 ```
+
+**注意**: 他のOSやPythonバージョンでの動作は未確認です。問題が発生した場合は、動作確認済み環境での実行を推奨します。
 
 #### 仮想環境の作成と依存関係のインストール
 ```bash
@@ -324,6 +333,7 @@ python -m src.auto_post.auto_lofi_post
 - エラーや不具合が発生した場合は `cron.log` を確認してください
 - YouTube API認証時は初回のみブラウザ認証が必要です
 - FFmpegやPythonパッケージのインストール状況もご確認ください
+- 動作確認済み環境と異なる環境で問題が発生した場合は、環境の違いを確認してください
 
 ## 📚 参考資料
 
