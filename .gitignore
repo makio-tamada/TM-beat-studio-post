@@ -1,3 +1,60 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cursor/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.python-version
+
+# Virtual environments
+.venv/
+venv/
+
+# Test & coverage caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.cache/
+coverage.xml
+.coverage
+.coverage.*
+htmlcov/
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Logs
+*.log
+logs/
+log/
+
+# Generated media/outputs (safe defaults)
+output/
+outputs/
+output_video/
+*.mp4
+*.webm
+*.wav
+*.aac
+
+# MoviePy temporary files
+*TEMP_MPY*
+
 # 環境変数ファイル
 .env
 .env.local
