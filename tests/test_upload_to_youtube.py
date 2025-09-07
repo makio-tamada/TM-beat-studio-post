@@ -73,7 +73,8 @@ class TestUploadToYoutube(unittest.TestCase):
     @patch('auto_post.upload_to_youtube.Credentials')
     @patch('auto_post.upload_to_youtube.InstalledAppFlow')
     @patch('auto_post.upload_to_youtube.build')
-    def test_get_authenticated_service_new_auth(self, mock_build, mock_flow, mock_credentials, mock_getenv):
+    @patch('auto_post.config.Config')
+    def test_get_authenticated_service_new_auth(self, mock_config, mock_build, mock_flow, mock_credentials, mock_getenv):
         """新規認証のテスト"""
         # リフレッシュトークン認証を失敗させる
         mock_getenv.side_effect = lambda key: {
@@ -84,6 +85,9 @@ class TestUploadToYoutube(unittest.TestCase):
         
         # リフレッシュトークン認証で例外を発生させる
         mock_credentials.side_effect = Exception("Auth failed")
+        
+        # Configのモック
+        mock_config.CLIENT_SECRETS_PATH.exists.return_value = True
         
         # 新規認証のモック
         mock_flow_instance = Mock()
@@ -103,8 +107,9 @@ class TestUploadToYoutube(unittest.TestCase):
     @patch('auto_post.upload_to_youtube.get_authenticated_service')
     @patch('auto_post.upload_to_youtube.MediaFileUpload')
     @patch('auto_post.upload_to_youtube.upload_video')
+    @patch('auto_post.config.Config')
     @patch('builtins.open', new_callable=mock_open)
-    def test_upload_video_to_youtube_success(self, mock_file, mock_upload_video, mock_media_upload, mock_get_service):
+    def test_upload_video_to_youtube_success(self, mock_file, mock_config, mock_upload_video, mock_media_upload, mock_get_service):
         """動画アップロード成功時のテスト"""
         # モックの設定
         mock_service = Mock()
@@ -115,6 +120,11 @@ class TestUploadToYoutube(unittest.TestCase):
         
         # upload_videoのモック
         mock_upload_video.return_value = "test_video_id"
+        
+        # Configのモック
+        mock_post_detail_path = Mock()
+        mock_post_detail_path.read_text.return_value = "Test post detail content"
+        mock_config.POST_DETAIL_PATH = mock_post_detail_path
         
         # メタデータファイルのモック
         mock_file.return_value.__enter__.return_value.read.return_value = json.dumps({
@@ -151,8 +161,9 @@ class TestUploadToYoutube(unittest.TestCase):
     @patch('auto_post.upload_to_youtube.get_authenticated_service')
     @patch('auto_post.upload_to_youtube.MediaFileUpload')
     @patch('auto_post.upload_to_youtube.upload_video')
+    @patch('auto_post.config.Config')
     @patch('builtins.open', new_callable=mock_open)
-    def test_upload_video_to_youtube_upload_failure(self, mock_file, mock_upload_video, mock_media_upload, mock_get_service):
+    def test_upload_video_to_youtube_upload_failure(self, mock_file, mock_config, mock_upload_video, mock_media_upload, mock_get_service):
         """動画アップロード失敗時のテスト"""
         # モックの設定
         mock_service = Mock()
@@ -163,6 +174,11 @@ class TestUploadToYoutube(unittest.TestCase):
         
         # upload_videoのモック（失敗）
         mock_upload_video.return_value = None
+        
+        # Configのモック
+        mock_post_detail_path = Mock()
+        mock_post_detail_path.read_text.return_value = "Test post detail content"
+        mock_config.POST_DETAIL_PATH = mock_post_detail_path
         
         # メタデータファイルのモック
         mock_file.return_value.__enter__.return_value.read.return_value = json.dumps({

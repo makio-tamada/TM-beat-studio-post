@@ -27,6 +27,9 @@ class TestLofiPostGenerator(unittest.TestCase):
     
     def setUp(self):
         """テスト前の準備"""
+        # テスト環境変数を設定
+        os.environ['TESTING'] = 'true'
+        
         self.temp_dir = tempfile.mkdtemp()
         self.test_output_dir = Path(self.temp_dir) / "output"
         

@@ -4,7 +4,7 @@ import json
 import random
 from pathlib import Path
 
-def test_thumbnail_selection():
+def run_thumbnail_selection_test():
     """thumbnail_titleのランダム選択機能をテストする"""
     
     jsonl_path = "src/auto_post/lofi_type_with_variations.jsonl"
@@ -52,4 +52,4 @@ def test_thumbnail_selection():
         print()
 
 if __name__ == "__main__":
-    test_thumbnail_selection()
+    run_thumbnail_selection_test()
