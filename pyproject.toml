@@ -1,0 +1,75 @@
+[project]
+name = "tm-beat-studio"
+version = "1.0.0"
+description = "Lo-Fi音楽の自動生成とYouTube投稿を行うPythonアプリケーション"
+authors = [
+    {name = "TM Beat Studio", email = "contact@tmbeatstudio.com"}
+]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = []
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(\
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | htmlcov
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["auto_post"]
+known_third_party = ["google", "pydub", "moviepy", "PIL", "numpy", "torch", "transformers", "diffusers"]
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = false
+warn_unreachable = true
+strict_equality = true
+no_implicit_optional = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+disallow_untyped_decorators = false
+
+[[tool.mypy.overrides]]
+module = [
+    "pydub.*",
+    "moviepy.*",
+    "PIL.*",
+    "google.*",
+    "transformers.*",
+    "diffusers.*",
+    "torch.*",
+    "torchvision.*",
+    "torchaudio.*",
+    "requests.*"
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "auto_post.combine_audio",
+    "auto_post.create_metadata",
+    "auto_post.thumbnail_generation",
+    "auto_post.auto_lofi_post",
+]
+ignore_errors = true

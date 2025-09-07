@@ -218,6 +218,53 @@ pytest tests/ -v
 
 詳細は [tests/README.md](tests/README.md) を参照してください。
 
+## 🔍 Lint実行
+
+コードの品質を保つために、Lintツールを使用してコードスタイルとエラーをチェックできます。
+
+### Lintツールのインストール
+
+```bash
+# Lint用の依存関係をインストール
+uv pip install -r requirements-lint.txt
+```
+
+### Lintチェックの実行
+
+```bash
+# チェックのみ実行（推奨）
+./run_lint.sh
+
+# またはuvを使用
+./run_lint_uv.sh
+
+# 自動修正も実行
+./run_lint.sh fix
+./run_lint_uv.sh fix
+```
+
+### 個別ツールの実行
+
+```bash
+# Black（コードフォーマッター）
+uv run black src/ tests/
+
+# isort（import文の整理）
+uv run isort src/ tests/
+
+# flake8（コードスタイルチェック）
+uv run flake8 src/ tests/
+
+# mypy（型チェック）
+uv run mypy src/
+```
+
+### Lint設定ファイル
+
+- `.flake8` - flake8の設定
+- `pyproject.toml` - black、isort、mypyの設定
+- `requirements-lint.txt` - Lint用の依存関係
+
 ## 🔧 個別機能の使用方法
 
 ### 音楽生成のみ

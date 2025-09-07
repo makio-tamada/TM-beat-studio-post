@@ -17,15 +17,18 @@ Environment
 - Set the environment variable PIAPI_KEY *or* edit API_KEY below.
 """
 
-import os
-import time
-import requests
-from typing import Optional
 import json
+import os
 import random
-from datetime import datetime
 import re
+import time
+from datetime import datetime
+from typing import Optional
+
+import requests
 from dotenv import load_dotenv
+
+from .config import Config
 
 # Load environment variables
 load_dotenv()
@@ -33,7 +36,9 @@ load_dotenv()
 # ------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------
-API_KEY = os.getenv("PIAPI_KEY", "51584de2f56859948cdcf6a6f950534d00399c47d60cd45c1d69b049cc9d13cb")  # ← ここにAPIキーを設定するか環境変数で渡す
+API_KEY = os.getenv(
+    "PIAPI_KEY", "51584de2f56859948cdcf6a6f950534d00399c47d60cd45c1d69b049cc9d13cb"
+)  # ← ここにAPIキーを設定するか環境変数で渡す
 
 BASE_URL = "https://api.piapi.ai/api/v1"
 CREATE_ENDPOINT = f"{BASE_URL}/task"
@@ -44,12 +49,12 @@ HEADERS = {
     "Content-Type": "application/json",
 }
 
-POLL_INTERVAL = 8          # seconds between polls
-POLL_TIMEOUT = 600         # allow up to 10 minutes for long queues
+POLL_INTERVAL = 8  # seconds between polls
+POLL_TIMEOUT = 600  # allow up to 10 minutes for long queues
 
 # New config
-TARGET_DURATION_SEC = 600             # total length to generate (e.g. 10 min)
-from .config import Config
+TARGET_DURATION_SEC = 600  # total length to generate (e.g. 10 min)
+
 LOFI_TYPES_JSONL = Config.JSONL_PATH
 
 # OpenAI configuration
@@ -57,69 +62,79 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_MODEL = "gpt-3.5-turbo"  # You can change to "gpt-4" if needed
 
+
 # ------------------------------------------------------------------
 # Filename and prompt helpers
 # ------------------------------------------------------------------
 def get_existing_filenames(directory: str) -> set:
     """
     指定されたディレクトリ内の既存のファイル名を取得する
-    
+
     Args:
         directory (str): ディレクトリのパス
-        
+
     Returns:
         set: 既存のファイル名（拡張子なし）のセット
     """
     existing_files = set()
     for file in os.listdir(directory):
-        if file.endswith('.mp3'):
+        if file.endswith(".mp3"):
             # 拡張子を除いたファイル名を追加
             existing_files.add(os.path.splitext(file)[0])
     return existing_files
 
-def generate_unique_filename(title: str, directory: str, prompt: str, max_attempts: int = 3) -> str:
+
+def generate_unique_filename(
+    title: str, directory: str, prompt: str, max_attempts: int = 3
+) -> str:
     """
     重複しないファイル名を生成する
-    
+
     Args:
         title (str): 元の曲名
         directory (str): 保存先ディレクトリ
         prompt (str): 音楽のプロンプト
         max_attempts (int): 最大再生成回数
-        
+
     Returns:
         str: 重複しないファイル名
     """
     # 基本のファイル名を生成
-    base_name = re.sub(r'[^0-9A-Za-z_\- ]+', '', title).strip().replace(" ", "_")
+    base_name = re.sub(r"[^0-9A-Za-z_\- ]+", "", title).strip().replace(" ", "_")
     if not base_name:
-        base_name = 'track'
-    
+        base_name = "track"
+
     # 既存のファイル名を取得
     existing_files = get_existing_filenames(directory)
-    
+
     # 重複がない場合はそのまま返す
     if base_name not in existing_files:
         return f"{base_name}.mp3"
-    
+
     # 重複がある場合は再生成を試みる
     for attempt in range(max_attempts):
-        print(f"Warning: Title '{base_name}' already exists. Attempt {attempt + 1}/{max_attempts}")
+        print(
+            f"Warning: Title '{base_name}' already exists. "
+            f"Attempt {attempt + 1}/{max_attempts}"
+        )
         # 新しい曲名を生成（既存のファイル名を考慮）
         new_title = fetch_track_title(prompt, directory)
-        new_base_name = re.sub(r'[^0-9A-Za-z_\- ]+', '', new_title).strip().replace(" ", "_")
+        new_base_name = (
+            re.sub(r"[^0-9A-Za-z_\- ]+", "", new_title).strip().replace(" ", "_")
+        )
         if not new_base_name:
-            new_base_name = 'track'
-        
+            new_base_name = "track"
+
         if new_base_name not in existing_files:
             return f"{new_base_name}.mp3"
-    
+
     # 最大試行回数を超えた場合、番号を付与
     counter = 1
     while f"{base_name}_{counter}" in existing_files:
         counter += 1
-    
+
     return f"{base_name}_{counter}.mp3"
+
 
 def choose_random_prompt() -> dict:
     """Load lofi_type.jsonl and return a random record."""
@@ -127,11 +142,12 @@ def choose_random_prompt() -> dict:
         lines = [json.loads(line) for line in f if line.strip()]
     return random.choice(lines)
 
+
 def fetch_track_title(prompt: str, directory: str = None) -> str:
     """
     Ask OpenAI API for a catchy track title.
     Falls back to 'Untitled' on any error.
-    
+
     Args:
         prompt (str): 音楽のプロンプト
         directory (str, optional): 既存のファイル名を取得するディレクトリ
@@ -139,38 +155,44 @@ def fetch_track_title(prompt: str, directory: str = None) -> str:
     try:
         if not OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY environment variable is not set")
-        
+
         # 既存のファイル名を取得
         existing_titles = set()
         if directory:
             existing_titles = get_existing_filenames(directory)
-        
+
         # 既存のタイトルをプロンプトに含める
         existing_titles_text = ""
         if existing_titles:
-            existing_titles_text = "\n- Avoid these existing titles:\n  * " + "\n  * ".join(sorted(existing_titles)[:10])  # 最大10個まで表示
-        
+            existing_titles_text = (
+                "\n- Avoid these existing titles:\n  * "
+                + "\n  * ".join(sorted(existing_titles)[:10])
+            )  # 最大10個まで表示
+
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {OPENAI_API_KEY}"
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
         }
-        
+
         payload = {
             "model": OPENAI_MODEL,
             "messages": [
                 {
                     "role": "system",
                     "content": (
-                        "You are a creative assistant that writes unique and memorable lo‑fi hip‑hop track titles.\n"
-                        "Focus on creating diverse titles that reflect the mood and atmosphere of the track.\n"
+                        "You are a creative assistant that writes unique and memorable "
+                        "lo‑fi hip‑hop track titles.\n"
+                        "Focus on creating diverse titles that reflect the mood and "
+                        "atmosphere of the track.\n"
                         "Avoid repetitive patterns and common phrases.\n"
                         "Return ONLY the title, nothing else."
-                    )
+                    ),
                 },
                 {
                     "role": "user",
                     "content": (
-                        f"Create a unique, memorable title (2-4 words) for a lo‑fi hip‑hop track.\n"
+                        f"Create a unique, memorable title (2-4 words) for a "
+                        f"lo‑fi hip‑hop track.\n"
                         f"Track description: '{prompt}'\n"
                         "Requirements:\n"
                         "- Return ONLY the title\n"
@@ -178,7 +200,8 @@ def fetch_track_title(prompt: str, directory: str = None) -> str:
                         "- No special characters or symbols\n"
                         "- No explanatory text\n"
                         "- Make it creative and unique\n"
-                        "- Avoid common phrases like 'lofi', 'beats', 'study', 'relax'\n"
+                        "- Avoid common phrases like 'lofi', 'beats', 'study', "
+                        "'relax'\n"
                         "- Focus on the mood and atmosphere\n"
                         "- Examples for rainy style:\n"
                         "  * 'Window Reflections'\n"
@@ -196,29 +219,29 @@ def fetch_track_title(prompt: str, directory: str = None) -> str:
                         "  * 'Fireplace'\n"
                         f"{existing_titles_text}\n"
                         "Title:"
-                    )
-                }
+                    ),
+                },
             ],
             "max_tokens": 16,
-            "temperature": 0.9
+            "temperature": 0.9,
         }
-        
+
         resp = requests.post(OPENAI_API_URL, json=payload, headers=headers, timeout=15)
         resp.raise_for_status()
-        
+
         data = resp.json()
         if "choices" in data and data["choices"]:
             title = data["choices"][0]["message"]["content"].strip()
         else:
             raise ValueError("Unexpected response format from OpenAI API")
-        
+
         # タイトルのクリーンアップ
         title = title.replace("Title:", "").strip()
-        title = title.strip('"\'')
+        title = title.strip("\"'")
         # 特殊文字を削除
-        title = ''.join(c for c in title if c.isalnum() or c.isspace() or c == '-')
+        title = "".join(c for c in title if c.isalnum() or c.isspace() or c == "-")
         # 複数のスペースを1つに
-        title = re.sub(r'\s+', ' ', title)
+        title = re.sub(r"\s+", " ", title)
         return title.strip() or "Untitled"
     except Exception as e:
         print(f"⚠️  OpenAI title generation failed: {e}")
@@ -239,9 +262,7 @@ def create_music_task(prompt: str) -> str:
             "negative_tags": "",
             "seed": -1,
         },
-        "config": {
-            "service_mode": "public"
-        },
+        "config": {"service_mode": "public"},
     }
     resp = requests.post(CREATE_ENDPOINT, headers=HEADERS, json=body, timeout=60)
     resp.raise_for_status()
@@ -355,7 +376,10 @@ def main() -> None:
 
     print(f"\n🎉 Generation finished. Total length: {total_duration/60:.1f} minutes")
 
-def piapi_music_generation(today_folder: str, prompt: str, target_duration_sec: int) -> None:
+
+def piapi_music_generation(
+    today_folder: str, prompt: str, target_duration_sec: int
+) -> None:
     if API_KEY == "YOUR_API_KEY_HERE":
         raise SystemExit("Please set API_KEY or PIAPI_KEY env var.")
 
@@ -383,7 +407,9 @@ def piapi_music_generation(today_folder: str, prompt: str, target_duration_sec: 
                 print("✅ Task completed!")
 
                 audio_url = extract_audio_url(task_data)
-                duration = task_data.get("output", {}).get("songs", [{}])[0].get("duration", 0)
+                duration = (
+                    task_data.get("output", {}).get("songs", [{}])[0].get("duration", 0)
+                )
                 if not audio_url:
                     raise ValueError("Audio URL not found")
 
@@ -392,7 +418,10 @@ def piapi_music_generation(today_folder: str, prompt: str, target_duration_sec: 
                 filename = generate_unique_filename(title, today_folder, prompt)
                 save_path = os.path.join(today_folder, filename)
 
-                print(f"🎧 {os.path.splitext(filename)[0]} ({duration:.1f}s)  ⬇️ {audio_url}")
+                print(
+                    f"🎧 {os.path.splitext(filename)[0]} ({duration:.1f}s)  "
+                    f"⬇️ {audio_url}"
+                )
                 download_audio(audio_url, save_path)
                 print(f"📁 Saved to {save_path}")
 
@@ -403,10 +432,16 @@ def piapi_music_generation(today_folder: str, prompt: str, target_duration_sec: 
                 retry_count += 1
                 if retry_count < max_retries:
                     print(f"❌ Error occurred: {str(e)}")
-                    print(f"🔄 Retrying in 3 minutes... (Attempt {retry_count + 1}/{max_retries})")
+                    print(
+                        f"🔄 Retrying in 3 minutes... "
+                        f"(Attempt {retry_count + 1}/{max_retries})"
+                    )
                     time.sleep(180)  # 3分待機
                 else:
-                    print(f"❌ Failed after {max_retries} attempts. Moving to next iteration.")
+                    print(
+                        f"❌ Failed after {max_retries} attempts. "
+                        f"Moving to next iteration."
+                    )
                     break
 
         if not success:
@@ -415,6 +450,7 @@ def piapi_music_generation(today_folder: str, prompt: str, target_duration_sec: 
         iteration += 1
 
     print(f"\n🎉 Generation finished. Total length: {total_duration/60:.1f} minutes")
+
 
 if __name__ == "__main__":
     main()
