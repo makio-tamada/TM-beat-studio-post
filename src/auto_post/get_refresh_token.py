@@ -1,6 +1,9 @@
+import logging
 from pathlib import Path
 
 from google_auth_oauthlib.flow import InstalledAppFlow
+
+logger = logging.getLogger(__name__)
 
 # OAuth 2.0のスコープ設定
 SCOPES = [
@@ -17,8 +20,8 @@ def get_refresh_token():
     client_secrets_file = Config.CLIENT_SECRETS_PATH
 
     if not client_secrets_file.exists():
-        print(f"エラー: {client_secrets_file} が見つかりません")
-        print(
+        logger.error(f"エラー: {client_secrets_file} が見つかりません")
+        logger.error(
             "Google Cloud Consoleからclient_secrets.jsonをダウンロードして、このディレクトリに配置してください"
         )
         return
@@ -30,11 +33,11 @@ def get_refresh_token():
     credentials = flow.run_local_server(port=0)
 
     # 認証情報を表示
-    print("\n=== 認証情報 ===")
-    print(f"アクセストークン: {credentials.token}")
-    print(f"リフレッシュトークン: {credentials.refresh_token}")
-    print(f"トークンの有効期限: {credentials.expiry}")
-    print(f"スコープ: {credentials.scopes}")
+    logger.info("\n=== 認証情報 ===")
+    logger.info(f"アクセストークン: {credentials.token}")
+    logger.info(f"リフレッシュトークン: {credentials.refresh_token}")
+    logger.info(f"トークンの有効期限: {credentials.expiry}")
+    logger.info(f"スコープ: {credentials.scopes}")
 
     # .envファイルに保存
     env_path = Path(__file__).parent / ".env"
@@ -46,8 +49,12 @@ GOOGLE_CLIENT_SECRET={credentials.client_secret}
     with open(env_path, "w") as f:
         f.write(env_content)
 
-    print(f"\n認証情報を {env_path} に保存しました")
+    logger.info(f"\n認証情報を {env_path} に保存しました")
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     get_refresh_token()

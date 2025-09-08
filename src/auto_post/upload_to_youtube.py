@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import os
 from pathlib import Path
 
@@ -9,6 +10,9 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+
+# Logger
+logger = logging.getLogger(__name__)
 
 # .envファイルを読み込む
 env_path = Path(__file__).parent / ".env"
@@ -58,8 +62,8 @@ def get_authenticated_service():
         credentials.refresh(Request())
 
     except Exception as e:
-        print(f"リフレッシュトークンからの認証に失敗しました: {e}")
-        print("新規認証を開始します...")
+        logger.error(f"リフレッシュトークンからの認証に失敗しました: {e}")
+        logger.info("新規認証を開始します...")
 
         # client_secrets.jsonのパスを確認
         from .config import Config
@@ -141,7 +145,7 @@ def upload_video(
             video_path, chunksize=1024 * 1024, resumable=True, mimetype="video/mp4"
         )
 
-        print("動画のアップロードを開始します...")
+        logger.info("動画のアップロードを開始します...")
         request = youtube.videos().insert(
             part=",".join(body.keys()), body=body, media_body=media
         )
@@ -151,14 +155,14 @@ def upload_video(
         while response is None:
             status, response = request.next_chunk()
             if status:
-                print(f"アップロード進捗: {int(status.progress() * 100)}%")
+                logger.info(f"アップロード進捗: {int(status.progress() * 100)}%")
 
-        print("動画のアップロードが完了しました！")
-        print(f"動画ID: {response['id']}")
+        logger.info("動画のアップロードが完了しました！")
+        logger.info(f"動画ID: {response['id']}")
         return response["id"]
 
     except Exception as e:
-        print(f"アップロード中にエラーが発生しました: {e}")
+        logger.error(f"アップロード中にエラーが発生しました: {e}")
         return None
 
 
@@ -183,11 +187,11 @@ def upload_thumbnail(video_id, thumbnail_path):
         )
         request.execute()
 
-        print("サムネイルのアップロードが完了しました！")
+        logger.info("サムネイルのアップロードが完了しました！")
         return True
 
     except Exception as e:
-        print(f"サムネイルのアップロード中にエラーが発生しました: {e}")
+        logger.error(f"サムネイルのアップロード中にエラーが発生しました: {e}")
         return False
 
 
@@ -226,14 +230,14 @@ def main():
     )
 
     if video_id:
-        print("動画のアップロードが成功しました！")
-        print(f"動画URL: https://www.youtube.com/watch?v={video_id}")
+        logger.info("動画のアップロードが成功しました！")
+        logger.info(f"動画URL: https://www.youtube.com/watch?v={video_id}")
 
         # サムネイルをアップロード
         if args.thumbnail:
             upload_thumbnail(video_id, args.thumbnail)
     else:
-        print("動画のアップロードに失敗しました。")
+        logger.error("動画のアップロードに失敗しました。")
 
 
 def upload_video_to_youtube(
@@ -270,8 +274,8 @@ def upload_video_to_youtube(
     if not video_id:
         raise Exception("動画のアップロードに失敗しました")
 
-    print("動画のアップロードが成功しました！")
-    print(f"動画URL: https://www.youtube.com/watch?v={video_id}")
+    logger.info("動画のアップロードが成功しました！")
+    logger.info(f"動画URL: https://www.youtube.com/watch?v={video_id}")
 
     # サムネイルをアップロード
     if thumbnail_path:
@@ -282,4 +286,8 @@ def upload_video_to_youtube(
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     main()

@@ -20,6 +20,7 @@ python create_video.py --image ./thumbs/my_thumb.png \
 """
 
 import argparse
+import logging
 import os
 from pathlib import Path
 from typing import Optional
@@ -35,6 +36,9 @@ from moviepy import (
 )
 from moviepy.video.fx import Resize
 from moviepy.video.VideoClip import VideoClip
+
+# Logger
+logger = logging.getLogger(__name__)
 
 
 # --------------------------------------------------------------
@@ -235,7 +239,7 @@ def build_video(
         return output_file
 
     except Exception as e:
-        print(f"==> 動画生成中にエラーが発生しました: {e}")
+        logger.error(f"==> 動画生成中にエラーが発生しました: {e}")
         return None
 
 
@@ -257,13 +261,13 @@ def main():
             output_dir=Path(args.output).expanduser(),
         )
         if output_file:
-            print("\n=== 処理完了 ===")
-            print(f"出力ファイル: {output_file.absolute()}")
+            logger.info("\n=== 処理完了 ===")
+            logger.info(f"出力ファイル: {output_file.absolute()}")
         else:
-            print("\n=== 処理失敗 ===")
+            logger.error("\n=== 処理失敗 ===")
     except Exception as e:
-        print("\n=== エラーが発生しました ===")
-        print(f"エラー内容: {e}")
+        logger.error("\n=== エラーが発生しました ===")
+        logger.error(f"エラー内容: {e}")
 
 
 def create_video(output_dir: Path, still_path: Path, audio_path: Path):
@@ -278,19 +282,23 @@ def create_video(output_dir: Path, still_path: Path, audio_path: Path):
     Returns:
         str: 生成された動画ファイルのパス。失敗した場合はNone
     """
-    print("==> 動画生成を開始します")
+    logger.info("==> 動画生成を開始します")
     output_file = build_video(
         still_path_or_clip=Path(still_path),
         audio_path_or_output=Path(audio_path),
         output_dir=Path(output_dir),
     )
     if output_file:
-        print(f"==> 動画生成が完了しました: {output_file}")
+        logger.info(f"==> 動画生成が完了しました: {output_file}")
         return str(output_file)
     else:
-        print("==> 動画生成に失敗しました")
+        logger.error("==> 動画生成に失敗しました")
         return None
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     main()

@@ -15,6 +15,7 @@ python create_metadata.py --temperature 0.7
 
 import argparse
 import json
+import logging
 import os
 import random
 from datetime import datetime
@@ -28,6 +29,9 @@ from .config import Config
 
 # Load environment variables
 load_dotenv()
+
+# Logger
+logger = logging.getLogger(__name__)
 
 # ------------------------------------------------------------------
 # Config paths
@@ -59,7 +63,7 @@ def load_random_lofi() -> Dict:
 
 def load_tracks() -> List[Dict]:
     if not TRACKS_JSON.exists():
-        print("⚠️  tracks_info.json not found")
+        logger.warning("⚠️  tracks_info.json not found")
         return []
     with open(TRACKS_JSON, encoding="utf-8") as f:
         return json.load(f)
@@ -108,13 +112,13 @@ def call_openai(prompt: str, max_tokens: int = 100, temp: float = 0.7) -> str:
                 text = data["choices"][0]["message"]["content"]
                 return text.strip()
             else:
-                print(f"Unexpected response format: {data}")
+                logger.warning(f"Unexpected response format: {data}")
                 return ""
         else:
-            print(f"API call failed ({r.status_code}): {r.text}")
+            logger.warning(f"API call failed ({r.status_code}): {r.text}")
             return ""
     except Exception as e:
-        print(f"API call error: {e}")
+        logger.error(f"API call error: {e}")
         return ""
 
 
@@ -236,10 +240,10 @@ def main():
     with open(OUTPUT_DIR / f"{base}_metadata.json", "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
-    print("=== Generated Metadata ===")
-    print("Title:", title)
-    print("Description:", description[:120], "...")
-    print("Saved to", OUTPUT_DIR)
+    logger.info("=== Generated Metadata ===")
+    logger.info("Title: %s", title)
+    logger.info("Description: %s ...", description[:120])
+    logger.info("Saved to %s", OUTPUT_DIR)
 
 
 def create_metadata(
@@ -270,7 +274,7 @@ def create_metadata(
 
     # tracklist
     if not tracks_json.exists():
-        print("⚠️  tracks_info.json not found")
+        logger.warning("⚠️  tracks_info.json not found")
         raise FileNotFoundError(f"tracks_info.json not found at: {tracks_json}")
     with open(tracks_json, encoding="utf-8") as f:
         tracks = json.load(f)
@@ -301,13 +305,17 @@ def create_metadata(
     with open(output_dir / "metadata.json", "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
-    print("=== Generated Metadata ===")
-    print("Title:", title)
-    print("Description:", description[:120], "...")
-    print("Saved to", output_dir)
+    logger.info("=== Generated Metadata ===")
+    logger.info("Title: %s", title)
+    logger.info("Description: %s ...", description[:120])
+    logger.info("Saved to %s", output_dir)
 
     return output_dir / "metadata.json"
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     main()

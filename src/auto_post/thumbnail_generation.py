@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import logging
 import os
 import random
 import re
@@ -13,6 +14,9 @@ from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 from .config import Config
+
+# Logger
+logger = logging.getLogger(__name__)
 
 # Thumbnail resolution for YouTube (16:9, 1280×720)
 THUMB_WIDTH = int(os.getenv("THUMB_WIDTH", "1280"))
@@ -110,7 +114,7 @@ def create_thumbnail(
         draw.text((x_pad, y), line, font=font, fill=text_color)
 
     img.save(output_path)
-    print(f"==> Saved thumbnail to {output_path}")
+    logger.info(f"==> Saved thumbnail to {output_path}")
 
 
 def main():
@@ -120,15 +124,15 @@ def main():
         if torch.backends.mps.is_available()
         else "cuda" if torch.cuda.is_available() else "cpu"
     )
-    print(f"==> Using device: {device}")
+    logger.info(f"==> Using device: {device}")
 
     # ランダムプロンプト選択
     lofi_type, prompt, thumb_title = load_random_prompt(jsonl_path)
-    print(f"==> Selected type: {lofi_type}")
-    print(f"==> Generating image for prompt: “{prompt}”")
+    logger.info(f"==> Selected type: {lofi_type}")
+    logger.info(f"==> Generating image for prompt: “{prompt}”")
 
     # モデルロード
-    print("==> Loading Stable Diffusion 3.5 Large model...")
+    logger.info("==> Loading Stable Diffusion 3.5 Large model...")
     pipe = DiffusionPipeline.from_pretrained(
         "stabilityai/stable-diffusion-3.5-large",
         use_auth_token=os.getenv("HUGGINGFACE_TOKEN"),
@@ -146,7 +150,7 @@ def main():
     filename = f"{safe_type}_{THUMB_WIDTH}x{THUMB_HEIGHT}.png"
     out_path = os.path.join(output_dir, filename)
     image.save(out_path)
-    print(f"==> Saved image to {out_path}")
+    logger.info(f"==> Saved image to {out_path}")
 
     # Create thumbnail with title text
     font_path = ensure_font()
@@ -170,10 +174,10 @@ def thumbnail_generation(
         if torch.backends.mps.is_available()
         else "cuda" if torch.cuda.is_available() else "cpu"
     )
-    print(f"==> Using device: {device}")
+    logger.info(f"==> Using device: {device}")
 
     # モデルロード
-    print("==> Loading Stable Diffusion 3.5 Large model...")
+    logger.info("==> Loading Stable Diffusion 3.5 Large model...")
     pipe = DiffusionPipeline.from_pretrained(
         "stabilityai/stable-diffusion-3.5-large",
         use_auth_token=os.getenv("HUGGINGFACE_TOKEN"),
@@ -196,7 +200,7 @@ def thumbnail_generation(
     )
     out_path = os.path.join(output_dir, filename)
     image.save(out_path)
-    print(f"==> Saved image to {out_path}")
+    logger.info(f"==> Saved image to {out_path}")
 
     # Create thumbnail with title text
     font_path = ensure_font()
@@ -219,4 +223,8 @@ def thumbnail_generation(
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     main()

@@ -16,11 +16,15 @@ python combine_audio.py --input-dir ./audio --output-dir ./out \\
 
 import argparse
 import json
+import logging
 import random
 from pathlib import Path
 from typing import List, Tuple
 
 from pydub import AudioSegment
+
+# モジュールロガー
+logger = logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------
@@ -158,10 +162,10 @@ def main() -> None:
 
         tracks = get_audio_files(input_dir)
         if not tracks:
-            print(f"==> {input_dir}内にmp3ファイルが見つかりません")
-            return
+        logger.info(f"==> {input_dir}内にmp3ファイルが見つかりません")
+        return
 
-        print(f"==> {len(tracks)}個のトラックを見つけました。結合を開始します...")
+        logger.info(f"==> {len(tracks)}個のトラックを見つけました。結合を開始します...")
 
         combined, info = combine_tracks(tracks, fade_ms=args.fade)
 
@@ -171,37 +175,37 @@ def main() -> None:
             if not ambient_path.is_absolute():
                 ambient_path = input_dir / args.ambient
             if ambient_path.exists():
-                print(f"==> 環境音を重ねています: {ambient_path.name}")
+                logger.info(f"==> 環境音を重ねています: {ambient_path.name}")
                 ambient = load_ambient(ambient_path, _safe_len_ms(combined))
                 combined = combined.overlay(ambient)
             else:
-                print(f"==> 環境音ファイルが見つかりません: {ambient_path}")
+                logger.error(f"==> 環境音ファイルが見つかりません: {ambient_path}")
 
         # mp3書き出し
         combined.export(output_mp3, format="mp3")
-        print(f"==> 結合トラックを保存しました: {output_mp3}")
+        logger.info(f"==> 結合トラックを保存しました: {output_mp3}")
 
         # JSONを保存
         with open(output_json, "w", encoding="utf-8") as f:
             json.dump(info, f, ensure_ascii=False, indent=2)
 
         # プレイリスト表示
-        print("\n=== プレイリスト ===")
+        logger.info("\n=== プレイリスト ===")
         for entry in info:
             mark = human_minutes(entry["start_time"])
-            print(f"{mark}  {entry['title']}")
+            logger.info(f"{mark}  {entry['title']}")
 
         total_min = human_minutes(info[-1]["end_time"])
-        print(f"\n==> 合計時間: {total_min}")
+        logger.info(f"\n==> 合計時間: {total_min}")
 
-        print(f"==> トラックリストを保存しました: {output_json}")
+        logger.info(f"==> トラックリストを保存しました: {output_json}")
 
-        print("\n=== 処理完了 ===")
-        print(f"出力ファイル: {output_mp3}")
+        logger.info("\n=== 処理完了 ===")
+        logger.info(f"出力ファイル: {output_mp3}")
 
     except Exception as e:
-        print("\n=== エラーが発生しました ===")
-        print(f"エラー内容: {e}")
+        logger.error("\n=== エラーが発生しました ===")
+        logger.error(f"エラー内容: {e}")
 
 
 def combine_audio(
@@ -227,7 +231,7 @@ def combine_audio(
         tracks = get_audio_files(input_dir)
         if not tracks:
             msg = f"==> {input_dir}内にmp3ファイルが見つかりません"
-            print(msg)
+            logger.info(msg)
             if input_dir.resolve() == output_dir.resolve():
                 # 空の出力を作成し、タプルを返す（拡張テスト期待）
                 output_dir.mkdir(parents=True, exist_ok=True)
@@ -239,7 +243,7 @@ def combine_audio(
                 raise ValueError("MP3ファイルが見つかりません")
             return None
 
-        print(f"==> {len(tracks)}個のトラックを見つけました。結合を開始します...")
+        logger.info(f"==> {len(tracks)}個のトラックを見つけました。結合を開始します...")
 
         combined, info = combine_tracks(tracks, fade_ms=fade_ms)
 
@@ -249,46 +253,50 @@ def combine_audio(
             try:
                 amb = AudioSegment.from_file(str(ambient), format="mp3")
                 combined = combined.overlay(amb)
-                print(f"==> 環境音を重ねています: {Path(str(ambient)).name}")
+                logger.info(f"==> 環境音を重ねています: {Path(str(ambient)).name}")
             except Exception:
                 # フォールバック: 従来の解決ロジック
                 ambient_path = Path(ambient)
                 if not ambient_path.is_absolute():
                     ambient_path = input_dir / ambient
                 if ambient_path.exists():
-                    print(f"==> 環境音を重ねています: {ambient_path.name}")
+                    logger.info(f"==> 環境音を重ねています: {ambient_path.name}")
                     amb = load_ambient(ambient_path, len(combined))
                     combined = combined.overlay(amb)
                 else:
-                    print(f"==> 環境音ファイルが見つかりません: {ambient_path}")
+                    logger.error(f"==> 環境音ファイルが見つかりません: {ambient_path}")
 
         # mp3書き出し
         combined.export(output_mp3, format="mp3")
-        print(f"==> 結合トラックを保存しました: {output_mp3}")
+        logger.info(f"==> 結合トラックを保存しました: {output_mp3}")
 
         # JSONを保存
         with open(output_json, "w", encoding="utf-8") as f:
             json.dump(info, f, ensure_ascii=False, indent=2)
 
         # プレイリスト表示
-        print("\n=== プレイリスト ===")
+        logger.info("\n=== プレイリスト ===")
         for entry in info:
             mark = human_minutes(entry["start_time"])
-            print(f"{mark}  {entry['title']}")
+            logger.info(f"{mark}  {entry['title']}")
 
         total_min = human_minutes(info[-1]["end_time"])
 
-        print(f"\n==> 合計時間: {total_min}")
-        print(f"==> トラックリストを保存しました: {output_json}")
+        logger.info(f"\n==> 合計時間: {total_min}")
+        logger.info(f"==> トラックリストを保存しました: {output_json}")
 
         return output_mp3, output_json
 
     except Exception as e:
-        print(f"==> 音声結合中にエラーが発生しました: {e}")
+        logger.error(f"==> 音声結合中にエラーが発生しました: {e}")
         if isinstance(input_dir_raw, str) or isinstance(output_dir_raw, str):
             raise
         return None
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     main()

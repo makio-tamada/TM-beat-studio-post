@@ -10,6 +10,7 @@ Lo-Fi音楽の自動生成とYouTube投稿を行うメインモジュール.
 """
 
 import argparse
+import logging
 import json
 import os
 import random
@@ -34,6 +35,9 @@ from .upload_to_youtube import upload_video_to_youtube
 
 # .envファイルを読み込み
 load_dotenv()
+
+# ロガー設定（モジュールロガー）
+logger = logging.getLogger(__name__)
 
 
 class LofiPostGenerator:
@@ -60,7 +64,7 @@ class LofiPostGenerator:
     def setup(self) -> None:
         """初期設定を行う"""
         start_time = time.time()
-        print("==> 初期設定を開始します...")
+        logger.info("==> 初期設定を開始します...")
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.send_slack_notification(
@@ -68,7 +72,7 @@ class LofiPostGenerator:
         )
 
         elapsed_time = time.time() - start_time
-        print(f"==> 初期設定完了 (処理時間: {elapsed_time:.2f}秒)")
+        logger.info(f"==> 初期設定完了 (処理時間: {elapsed_time:.2f}秒)")
 
     def send_slack_notification(self, message: str, is_error: bool = False) -> None:
         """Slackに通知を送信"""
@@ -91,36 +95,36 @@ class LofiPostGenerator:
             response.raise_for_status()
 
         except Exception as e:
-            print(f"==> Slack通知の送信に失敗しました: {e}")
+            logger.error(f"==> Slack通知の送信に失敗しました: {e}")
 
     def _extract_type_from_thumbnail(self) -> str:
         """サムネイルファイル名からLo-Fiタイプを抽出"""
         start_time = time.time()
-        print("==> サムネイルからLo-Fiタイプを抽出中...")
+        logger.info("==> サムネイルからLo-Fiタイプを抽出中...")
 
         thumbnail = self._find_latest_file(Config.THUMBNAIL_PATTERN)
         if not thumbnail:
             error_msg = "サムネイルファイルが見つかりません"
             self.send_slack_notification(error_msg, is_error=True)
-            print(f"==> {error_msg}")
+            logger.error(f"==> {error_msg}")
             sys.exit(1)
 
         # ファイル名から最初の_までの部分を取得
         type_name = thumbnail.stem.split("_")[0]
-        print(f"==> サムネイルからLo-Fiタイプを抽出: {type_name}")
+        logger.info(f"==> サムネイルからLo-Fiタイプを抽出: {type_name}")
 
         elapsed_time = time.time() - start_time
-        print(f"==> Lo-Fiタイプ抽出完了 (処理時間: {elapsed_time:.2f}秒)")
+        logger.info(f"==> Lo-Fiタイプ抽出完了 (処理時間: {elapsed_time:.2f}秒)")
         return type_name
 
     def select_prompt(self) -> None:
         """プロンプトを選択する"""
         start_time = time.time()
-        print("==> プロンプト選択を開始します...")
+        logger.info("==> プロンプト選択を開始します...")
 
         try:
             if self.args.skip_type_selection:
-                print("==> Lo-Fiタイプの選択をスキップします")
+                logger.info("==> Lo-Fiタイプの選択をスキップします")
                 lofi_type = self._extract_type_from_thumbnail()
 
                 # 抽出したタイプに対応するプロンプトを探す（sadが含まれているかで判断）
@@ -140,7 +144,7 @@ class LofiPostGenerator:
                     if not selected:
                         error_msg = f"抽出したタイプ '{lofi_type}' に対応するプロンプトが見つかりません"
                         self.send_slack_notification(error_msg, is_error=True)
-                        print(f"==> {error_msg}")
+                        logger.error(f"==> {error_msg}")
                         sys.exit(1)
 
                     self.selected_prompt = selected
@@ -171,12 +175,12 @@ class LofiPostGenerator:
             )
 
             elapsed_time = time.time() - start_time
-            print(f"==> プロンプト選択完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> プロンプト選択完了 (処理時間: {elapsed_time:.2f}秒)")
 
         except Exception as e:
             error_msg = f"プロンプトの読み込み中にエラーが発生しました: {e}"
             self.send_slack_notification(error_msg, is_error=True)
-            print(f"==> {error_msg}")
+            logger.error(f"==> {error_msg}")
             sys.exit(1)
 
     def _select_specific_prompt(self) -> None:
@@ -244,33 +248,35 @@ class LofiPostGenerator:
 
     def _print_selected_prompt(self) -> None:
         """選択されたプロンプトを表示"""
-        print(f"==> Selected type: {self.selected_prompt['type']}")
-        print(
+        logger.info(f"==> Selected type: {self.selected_prompt['type']}")
+        logger.info(
             f'==> Generating music for prompt: "{self.selected_prompt["music_prompt"]}"'
         )
-        print(
+        logger.info(
             f"==> Generating thumbnail for prompt: "
             f'"{self.selected_prompt["thumbnail_title"]}"'
         )
-        print(f'==> Generating image for prompt: "{self.selected_image_prompt}"')
-        print(f'==> Using ambient: "{self.selected_prompt["ambient"]}"')
+        logger.info(
+            f'==> Generating image for prompt: "{self.selected_image_prompt}"'
+        )
+        logger.info(f'==> Using ambient: "{self.selected_prompt["ambient"]}"')
 
     def generate_music(self) -> None:
         """音楽を生成する"""
         start_time = time.time()
-        print("\n=== 音楽生成 ===")
+        logger.info("\n=== 音楽生成 ===")
         if self.args.skip_music_gen:
-            print("==> 音楽生成をスキップします")
+            logger.info("==> 音楽生成をスキップします")
             elapsed_time = time.time() - start_time
-            print(f"==> 音楽生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> 音楽生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
             return
 
         # 目標時間の半分を新規生成、残りをストックから取得
         target_duration_new = self.args.target_duration_sec // 2
         target_duration_stock = self.args.target_duration_sec - target_duration_new
 
-        print(f"==> 新規生成目標時間: {target_duration_new}秒")
-        print(f"==> ストック使用目標時間: {target_duration_stock}秒")
+        logger.info(f"==> 新規生成目標時間: {target_duration_new}秒")
+        logger.info(f"==> ストック使用目標時間: {target_duration_stock}秒")
 
         # 新規生成を試みる
         try:
@@ -286,18 +292,18 @@ class LofiPostGenerator:
             self.success_music_gen = False
             error_msg = f"新規音楽生成中にエラーが発生しました: {e}"
             self.send_slack_notification(error_msg, is_error=True)
-            print(f"==> {error_msg}")
+            logger.error(f"==> {error_msg}")
             # エラー時は残りの時間分をストックから取得
             target_duration_stock = self.args.target_duration_sec
 
         # ストックから音楽を取得
         if target_duration_stock > 0:
-            print("\n=== ストック音楽の取得 ===")
-            print(f"==> 目標時間: {target_duration_stock}秒")
+            logger.info("\n=== ストック音楽の取得 ===")
+            logger.info(f"==> 目標時間: {target_duration_stock}秒")
             self._use_stock_music(target_duration_stock)
 
         elapsed_time = time.time() - start_time
-        print(f"==> 音楽生成完了 (処理時間: {elapsed_time:.2f}秒)")
+        logger.info(f"==> 音楽生成完了 (処理時間: {elapsed_time:.2f}秒)")
 
     def _use_stock_music(self, target_duration: int) -> None:
         """ストック音楽を使用"""
@@ -311,7 +317,7 @@ class LofiPostGenerator:
         """既存の音楽ファイルをストックにコピー"""
         existing_music_files = list(self.output_dir.glob("*.mp3"))
         if existing_music_files:
-            print("==> 既存の音楽ファイルをストックにコピーします")
+            logger.info("==> 既存の音楽ファイルをストックにコピーします")
             for file in existing_music_files:
                 self._copy_file_to_stock(file, stock_audio_dir)
 
@@ -327,19 +333,19 @@ class LofiPostGenerator:
             counter += 1
 
         shutil.copy(file, new_file_path)
-        print(f"==> ストックにコピーしました: {file.name}")
+        logger.info(f"==> ストックにコピーしました: {file.name}")
 
     def _load_music_from_stock(
         self, stock_audio_dir: Path, target_duration: int
     ) -> None:
         """ストックから音楽を読み込む"""
-        print("==> 音楽ストックから音楽を読み込みます")
+        logger.info("==> 音楽ストックから音楽を読み込みます")
 
         stock_files = list(stock_audio_dir.glob("*.mp3"))
         if not stock_files:
             error_msg = f"ストックに音楽ファイルが見つかりません: {stock_audio_dir}"
             self.send_slack_notification(error_msg, is_error=True)
-            print(f"==> {error_msg}")
+            logger.error(f"==> {error_msg}")
             sys.exit(1)
 
         selected_files = self._select_music_files(stock_files, target_duration)
@@ -392,11 +398,11 @@ class LofiPostGenerator:
         if not selected_files:
             raise ValueError("適切な長さの曲を組み合わせることができませんでした")
 
-        print(
+        logger.info(
             f"==> 選択完了: 目標 {target_duration}秒 → "
             f"実際 {total_duration:.1f}秒 ({total_duration/60:.1f}分)"
         )
-        print(f"==> 目標達成率: {(total_duration/target_duration)*100:.1f}%")
+        logger.info(f"==> 目標達成率: {(total_duration/target_duration)*100:.1f}%")
         return selected_files
 
     def _copy_selected_files_to_output(self, selected_files: List[Path]) -> None:
@@ -426,22 +432,22 @@ class LofiPostGenerator:
             duration = len(audio) / 1000
             total_duration += duration
 
-            print(
+            logger.info(
                 f"==> ストックから音楽をコピーしました: {new_name} (長さ: {duration:.1f}秒)"
             )
 
-        print(f"==> 合計長さ: {total_duration:.1f}秒")
+        logger.info(f"==> 合計長さ: {total_duration:.1f}秒")
         self.send_slack_notification(
             f"🎵 ストックから音楽を読み込みました\n合計長さ: {total_duration:.1f}秒"
         )
 
     def _find_latest_file(self, pattern: str) -> Optional[Path]:
         """指定されたパターンに一致する最新のファイルを探す"""
-        print(f"==> ファイル検索パターン: {pattern}")
-        print(f"==> 検索ディレクトリ: {self.output_dir}")
+        logger.info(f"==> ファイル検索パターン: {pattern}")
+        logger.info(f"==> 検索ディレクトリ: {self.output_dir}")
 
         files = list(self.output_dir.glob(pattern))
-        print(f"==> 見つかったファイル: {[f.name for f in files]}")
+        logger.info(f"==> 見つかったファイル: {[f.name for f in files]}")
 
         if not files:
             return None
@@ -450,9 +456,9 @@ class LofiPostGenerator:
     def combine_audio_tracks(self) -> Tuple[str, str]:
         """音声トラックを結合"""
         start_time = time.time()
-        print("\n=== 音楽結合 ===")
+        logger.info("\n=== 音楽結合 ===")
         if self.args.skip_audio_combine:
-            print("==> 音声結合をスキップします")
+            logger.info("==> 音声結合をスキップします")
             # 既存のファイルを探す
             output_mp3 = self._find_latest_file(Config.COMBINED_AUDIO_FILENAME)
             tracks_json = self._find_latest_file(Config.TRACKS_INFO_FILENAME)
@@ -462,14 +468,14 @@ class LofiPostGenerator:
                     "音声結合をスキップしましたが、必要なファイルが見つかりません"
                 )
                 self.send_slack_notification(error_msg, is_error=True)
-                print(f"==> {error_msg}")
+                logger.error(f"==> {error_msg}")
                 sys.exit(1)
 
-            print(
+            logger.info(
                 f"==> 既存のファイルを使用します: {output_mp3.name}, {tracks_json.name}"
             )
             elapsed_time = time.time() - start_time
-            print(f"==> 音楽結合スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> 音楽結合スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
             return str(output_mp3), str(tracks_json)
 
         try:
@@ -482,22 +488,22 @@ class LofiPostGenerator:
             )
             self.send_slack_notification("🎧 音楽結合が完了しました")
             elapsed_time = time.time() - start_time
-            print(f"==> 音楽結合完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> 音楽結合完了 (処理時間: {elapsed_time:.2f}秒)")
             return output_mp3_path, tracks_json_path
         except Exception as e:
             error_msg = f"音楽結合中にエラーが発生しました: {e}"
             self.send_slack_notification(error_msg, is_error=True)
-            print(f"==> {error_msg}")
+            logger.error(f"==> {error_msg}")
             sys.exit(1)
 
     def generate_thumbnail(self) -> Tuple[str, str]:
         """サムネイルを生成"""
         start_time = time.time()
-        print("\n=== サムネイル生成 ===")
+        logger.info("\n=== サムネイル生成 ===")
         if self.args.skip_thumbnail_gen:
-            print("==> サムネイル生成をスキップします")
+            logger.info("==> サムネイル生成をスキップします")
             # 既存のファイルを探す
-            print("==> サムネイルファイルを検索中...")
+            logger.info("==> サムネイルファイルを検索中...")
             thumbnail_path = self._find_latest_file(Config.THUMBNAIL_PATTERN)
 
             if not thumbnail_path:
@@ -505,13 +511,13 @@ class LofiPostGenerator:
                     "サムネイル生成をスキップしましたが、必要なファイルが見つかりません"
                 )
                 self.send_slack_notification(error_msg, is_error=True)
-                print(f"==> {error_msg}")
+                logger.error(f"==> {error_msg}")
                 sys.exit(1)
 
-            print(f"==> 既存のファイルを使用します: {thumbnail_path.name}")
+            logger.info(f"==> 既存のファイルを使用します: {thumbnail_path.name}")
             # サムネイルファイルを画像ファイルとしても使用
             elapsed_time = time.time() - start_time
-            print(f"==> サムネイル生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> サムネイル生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
             return str(thumbnail_path), str(thumbnail_path)
 
         try:
@@ -523,20 +529,20 @@ class LofiPostGenerator:
             )
             self.send_slack_notification("🖼️ サムネイル生成が完了しました")
             elapsed_time = time.time() - start_time
-            print(f"==> サムネイル生成完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> サムネイル生成完了 (処理時間: {elapsed_time:.2f}秒)")
             return image_path, thumbnail_path
         except Exception as e:
             error_msg = f"サムネイル生成中にエラーが発生しました: {e}"
             self.send_slack_notification(error_msg, is_error=True)
-            print(f"==> {error_msg}")
+            logger.error(f"==> {error_msg}")
             sys.exit(1)
 
     def generate_metadata(self, tracks_json_path: str) -> str:
         """メタデータを生成"""
         start_time = time.time()
-        print("\n=== メタデータ生成 ===")
+        logger.info("\n=== メタデータ生成 ===")
         if self.args.skip_metadata_gen:
-            print("==> メタデータ生成をスキップします")
+            logger.info("==> メタデータ生成をスキップします")
             # 既存のファイルを探す
             metadata_path = self._find_latest_file(Config.METADATA_FILENAME)
 
@@ -545,12 +551,12 @@ class LofiPostGenerator:
                     "メタデータ生成をスキップしましたが、必要なファイルが見つかりません"
                 )
                 self.send_slack_notification(error_msg, is_error=True)
-                print(f"==> {error_msg}")
+                logger.error(f"==> {error_msg}")
                 sys.exit(1)
 
-            print(f"==> 既存のファイルを使用します: {metadata_path.name}")
+            logger.info(f"==> 既存のファイルを使用します: {metadata_path.name}")
             elapsed_time = time.time() - start_time
-            print(f"==> メタデータ生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> メタデータ生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
             return str(metadata_path)
 
         try:
@@ -564,20 +570,20 @@ class LofiPostGenerator:
             )
             self.send_slack_notification("📋 メタデータ生成が完了しました")
             elapsed_time = time.time() - start_time
-            print(f"==> メタデータ生成完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> メタデータ生成完了 (処理時間: {elapsed_time:.2f}秒)")
             return metadata_path
         except Exception as e:
             error_msg = f"メタデータ生成中にエラーが発生しました: {e}"
             self.send_slack_notification(error_msg, is_error=True)
-            print(f"==> {error_msg}")
+            logger.error(f"==> {error_msg}")
             sys.exit(1)
 
     def generate_video(self, image_path: str, output_mp3_path: str) -> Optional[str]:
         """動画を生成"""
         start_time = time.time()
-        print("\n=== 動画生成 ===")
+        logger.info("\n=== 動画生成 ===")
         if self.args.skip_video_gen:
-            print("==> 動画生成をスキップします")
+            logger.info("==> 動画生成をスキップします")
             # 既存のファイルを探す
             video_path = self._find_latest_file(Config.FINAL_VIDEO_FILENAME)
 
@@ -586,12 +592,12 @@ class LofiPostGenerator:
                     "動画生成をスキップしましたが、必要なファイルが見つかりません"
                 )
                 self.send_slack_notification(error_msg, is_error=True)
-                print(f"==> {error_msg}")
+                logger.error(f"==> {error_msg}")
                 sys.exit(1)
 
-            print(f"==> 既存のファイルを使用します: {video_path.name}")
+            logger.info(f"==> 既存のファイルを使用します: {video_path.name}")
             elapsed_time = time.time() - start_time
-            print(f"==> 動画生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> 動画生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
             return str(video_path)
 
         try:
@@ -602,12 +608,12 @@ class LofiPostGenerator:
             )
             self.send_slack_notification("🎥 動画生成が完了しました")
             elapsed_time = time.time() - start_time
-            print(f"==> 動画生成完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> 動画生成完了 (処理時間: {elapsed_time:.2f}秒)")
             return video_path
         except Exception as e:
             error_msg = f"動画生成中にエラーが発生しました: {e}"
             self.send_slack_notification(error_msg, is_error=True)
-            print(f"==> {error_msg}")
+            logger.error(f"==> {error_msg}")
             sys.exit(1)
 
     def upload_to_youtube(
@@ -615,11 +621,11 @@ class LofiPostGenerator:
     ) -> None:
         """YouTubeにアップロード"""
         start_time = time.time()
-        print("\n=== YouTubeにアップロード ===")
+        logger.info("\n=== YouTubeにアップロード ===")
         if self.args.skip_upload:
-            print("==> 動画のアップロードをスキップします")
+            logger.info("==> 動画のアップロードをスキップします")
             elapsed_time = time.time() - start_time
-            print(
+            logger.info(
                 f"==> YouTubeアップロードスキップ完了 (処理時間: {elapsed_time:.2f}秒)"
             )
             return
@@ -633,23 +639,23 @@ class LofiPostGenerator:
                 tags=self.args.tags,
             )
             self.send_slack_notification("📤 YouTubeへのアップロードが完了しました")
-            print("==> YouTubeへのアップロードが完了しました")
+            logger.info("==> YouTubeへのアップロードが完了しました")
             elapsed_time = time.time() - start_time
-            print(f"==> YouTubeアップロード完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> YouTubeアップロード完了 (処理時間: {elapsed_time:.2f}秒)")
         except Exception as e:
             error_msg = f"動画のアップロード中にエラーが発生しました: {e}"
             self.send_slack_notification(error_msg, is_error=True)
-            print(f"==> {error_msg}")
+            logger.error(f"==> {error_msg}")
             sys.exit(1)
 
     def store_assets(self) -> None:
         """アセットをストックに保存"""
         start_time = time.time()
-        print("\n=== 音源データのストック ===")
+        logger.info("\n=== 音源データのストック ===")
 
         if not self.success_music_gen:
             elapsed_time = time.time() - start_time
-            print(f"==> アセット保存スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(f"==> アセット保存スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
             return
 
         stock_audio_dir = Config.STOCK_AUDIO_BASE_DIR / self.selected_prompt["type"]
@@ -662,7 +668,7 @@ class LofiPostGenerator:
         for file in self.newly_generated_files:
             if not file.stem.startswith("combined_audio"):
                 self._copy_file_to_stock(file, stock_audio_dir)
-                print(f"==> 新規生成ファイルをストックに保存: {file.name}")
+                logger.info(f"==> 新規生成ファイルをストックに保存: {file.name}")
 
         # 画像ファイルをストック
         for file in self.output_dir.glob("*.png"):
@@ -671,9 +677,9 @@ class LofiPostGenerator:
         # 出力ディレクトリを削除
         shutil.rmtree(self.output_dir)
 
-        print("\n=== 音源データのストック完了 ===")
-        print(f"音源データのストックディレクトリ: {stock_audio_dir.absolute()}")
-        print(f"画像データのストックディレクトリ: {stock_image_dir.absolute()}")
+        logger.info("\n=== 音源データのストック完了 ===")
+        logger.info(f"音源データのストックディレクトリ: {stock_audio_dir.absolute()}")
+        logger.info(f"画像データのストックディレクトリ: {stock_image_dir.absolute()}")
 
         self.send_slack_notification(
             "✅ 処理が正常に完了しました\n"
@@ -683,12 +689,12 @@ class LofiPostGenerator:
         )
 
         elapsed_time = time.time() - start_time
-        print(f"==> アセット保存完了 (処理時間: {elapsed_time:.2f}秒)")
+        logger.info(f"==> アセット保存完了 (処理時間: {elapsed_time:.2f}秒)")
 
     def run(self) -> None:
         """メイン処理を実行"""
         total_start_time = time.time()
-        print(f"=== 実行開始: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===")
+        logger.info(f"=== 実行開始: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===")
 
         try:
             self.setup()
@@ -702,19 +708,19 @@ class LofiPostGenerator:
             if video_path:
                 self.upload_to_youtube(video_path, thumbnail_path, metadata_path)
 
-            print("\n=== 処理完了 ===")
-            print(f"出力ディレクトリ: {self.output_dir.absolute()}")
+            logger.info("\n=== 処理完了 ===")
+            logger.info(f"出力ディレクトリ: {self.output_dir.absolute()}")
 
             self.store_assets()
 
             total_elapsed_time = time.time() - total_start_time
-            print(f"\n=== 実行終了: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===")
-            print(f"=== 総処理時間: {total_elapsed_time:.2f}秒 ===")
+            logger.info(f"\n=== 実行終了: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===")
+            logger.info(f"=== 総処理時間: {total_elapsed_time:.2f}秒 ===")
 
         except Exception as e:
             error_msg = f"予期せぬエラーが発生しました: {e}"
             self.send_slack_notification(error_msg, is_error=True)
-            print(f"==> {error_msg}")
+            logger.error(f"==> {error_msg}")
             sys.exit(1)
 
 
@@ -827,6 +833,10 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     """メイン関数。Lo-Fi投稿生成の全プロセスを実行する。"""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     args = parse_args()
     generator = LofiPostGenerator(args)
     generator.run()

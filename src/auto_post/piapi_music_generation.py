@@ -18,6 +18,7 @@ Environment
 """
 
 import json
+import logging
 import os
 import random
 import re
@@ -32,6 +33,9 @@ from .config import Config
 
 # Load environment variables
 load_dotenv()
+
+# Logger
+logger = logging.getLogger(__name__)
 
 # ------------------------------------------------------------------
 # Configuration
@@ -113,9 +117,8 @@ def generate_unique_filename(
 
     # 重複がある場合は再生成を試みる
     for attempt in range(max_attempts):
-        print(
-            f"Warning: Title '{base_name}' already exists. "
-            f"Attempt {attempt + 1}/{max_attempts}"
+        logger.warning(
+            f"Warning: Title '{base_name}' already exists. Attempt {attempt + 1}/{max_attempts}"
         )
         # 新しい曲名を生成（既存のファイル名を考慮）
         new_title = fetch_track_title(prompt, directory)
@@ -244,7 +247,7 @@ def fetch_track_title(prompt: str, directory: str = None) -> str:
         title = re.sub(r"\s+", " ", title)
         return title.strip() or "Untitled"
     except Exception as e:
-        print(f"⚠️  OpenAI title generation failed: {e}")
+        logger.warning(f"⚠️  OpenAI title generation failed: {e}")
         return "Untitled"
 
 
@@ -291,7 +294,7 @@ def wait_for_task(task_id: str, timeout: int = POLL_TIMEOUT) -> dict:
         if time.time() - start > timeout:
             raise TimeoutError(f"Task did not complete within {timeout} minutes")
 
-        print("⏳ Generating… waiting", flush=True)
+        logger.info("⏳ Generating… waiting")
         time.sleep(POLL_INTERVAL)
 
 
@@ -346,20 +349,20 @@ def main() -> None:
     prompt = record["music_prompt"]
 
     while total_duration < TARGET_DURATION_SEC:
-        print(f"\n=== Iteration {iteration} | Accumulated {total_duration:.1f}s ===")
-        print(f"🎼 Creating task with prompt: {prompt!r}")
+        logger.info(f"\n=== Iteration {iteration} | Accumulated {total_duration:.1f}s ===")
+        logger.info(f"🎼 Creating task with prompt: {prompt!r}")
 
         task_id = create_music_task(prompt)
-        print(f"🆔 Task ID: {task_id}")
+        logger.info(f"🆔 Task ID: {task_id}")
 
-        print("🚀 Waiting for completion…")
+        logger.info("🚀 Waiting for completion…")
         task_data = wait_for_task(task_id)
-        print("✅ Task completed!")
+        logger.info("✅ Task completed!")
 
         audio_url = extract_audio_url(task_data)
         duration = task_data.get("output", {}).get("songs", [{}])[0].get("duration", 0)
         if not audio_url:
-            print("❌ Audio URL not found, skipping.")
+            logger.error("❌ Audio URL not found, skipping.")
             continue
 
         # Get title via OpenAI
@@ -367,14 +370,14 @@ def main() -> None:
         filename = generate_unique_filename(title, today_folder, prompt)
         save_path = os.path.join(today_folder, filename)
 
-        print(f"🎧 {os.path.splitext(filename)[0]} ({duration:.1f}s)  ⬇️ {audio_url}")
+        logger.info(f"🎧 {os.path.splitext(filename)[0]} ({duration:.1f}s)  ⬇️ {audio_url}")
         download_audio(audio_url, save_path)
-        print(f"📁 Saved to {save_path}")
+        logger.info(f"📁 Saved to {save_path}")
 
         total_duration += float(duration or 0)
         iteration += 1
 
-    print(f"\n🎉 Generation finished. Total length: {total_duration/60:.1f} minutes")
+    logger.info(f"\n🎉 Generation finished. Total length: {total_duration/60:.1f} minutes")
 
 
 def piapi_music_generation(
@@ -390,8 +393,8 @@ def piapi_music_generation(
     iteration = 1
 
     while total_duration < target_duration_sec:
-        print(f"\n=== Iteration {iteration} | Accumulated {total_duration:.1f}s ===")
-        print(f"🎼 Creating task with prompt: {prompt!r}")
+        logger.info(f"\n=== Iteration {iteration} | Accumulated {total_duration:.1f}s ===")
+        logger.info(f"🎼 Creating task with prompt: {prompt!r}")
 
         max_retries = 3
         retry_count = 0
@@ -400,11 +403,11 @@ def piapi_music_generation(
         while not success and retry_count < max_retries:
             try:
                 task_id = create_music_task(prompt)
-                print(f"🆔 Task ID: {task_id}")
+                logger.info(f"🆔 Task ID: {task_id}")
 
-                print("🚀 Waiting for completion…")
+                logger.info("🚀 Waiting for completion…")
                 task_data = wait_for_task(task_id)
-                print("✅ Task completed!")
+                logger.info("✅ Task completed!")
 
                 audio_url = extract_audio_url(task_data)
                 duration = (
@@ -418,12 +421,11 @@ def piapi_music_generation(
                 filename = generate_unique_filename(title, today_folder, prompt)
                 save_path = os.path.join(today_folder, filename)
 
-                print(
-                    f"🎧 {os.path.splitext(filename)[0]} ({duration:.1f}s)  "
-                    f"⬇️ {audio_url}"
+                logger.info(
+                    f"🎧 {os.path.splitext(filename)[0]} ({duration:.1f}s)  ⬇️ {audio_url}"
                 )
                 download_audio(audio_url, save_path)
-                print(f"📁 Saved to {save_path}")
+                logger.info(f"📁 Saved to {save_path}")
 
                 total_duration += float(duration or 0)
                 success = True
@@ -431,16 +433,14 @@ def piapi_music_generation(
             except Exception as e:
                 retry_count += 1
                 if retry_count < max_retries:
-                    print(f"❌ Error occurred: {str(e)}")
-                    print(
-                        f"🔄 Retrying in 3 minutes... "
-                        f"(Attempt {retry_count + 1}/{max_retries})"
+                    logger.error(f"❌ Error occurred: {str(e)}")
+                    logger.info(
+                        f"🔄 Retrying in 3 minutes... (Attempt {retry_count + 1}/{max_retries})"
                     )
                     time.sleep(180)  # 3分待機
                 else:
-                    print(
-                        f"❌ Failed after {max_retries} attempts. "
-                        f"Moving to next iteration."
+                    logger.error(
+                        f"❌ Failed after {max_retries} attempts. Moving to next iteration."
                     )
                     break
 
@@ -449,8 +449,12 @@ def piapi_music_generation(
 
         iteration += 1
 
-    print(f"\n🎉 Generation finished. Total length: {total_duration/60:.1f} minutes")
+    logger.info(f"\n🎉 Generation finished. Total length: {total_duration/60:.1f} minutes")
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     main()
