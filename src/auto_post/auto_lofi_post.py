@@ -10,8 +10,8 @@ Lo-Fi音楽の自動生成とYouTube投稿を行うメインモジュール.
 """
 
 import argparse
-import logging
 import json
+import logging
 import os
 import random
 import shutil
@@ -256,9 +256,7 @@ class LofiPostGenerator:
             f"==> Generating thumbnail for prompt: "
             f'"{self.selected_prompt["thumbnail_title"]}"'
         )
-        logger.info(
-            f'==> Generating image for prompt: "{self.selected_image_prompt}"'
-        )
+        logger.info(f'==> Generating image for prompt: "{self.selected_image_prompt}"')
         logger.info(f'==> Using ambient: "{self.selected_prompt["ambient"]}"')
 
     def generate_music(self) -> None:
@@ -517,7 +515,9 @@ class LofiPostGenerator:
             logger.info(f"==> 既存のファイルを使用します: {thumbnail_path.name}")
             # サムネイルファイルを画像ファイルとしても使用
             elapsed_time = time.time() - start_time
-            logger.info(f"==> サムネイル生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(
+                f"==> サムネイル生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)"
+            )
             return str(thumbnail_path), str(thumbnail_path)
 
         try:
@@ -556,7 +556,9 @@ class LofiPostGenerator:
 
             logger.info(f"==> 既存のファイルを使用します: {metadata_path.name}")
             elapsed_time = time.time() - start_time
-            logger.info(f"==> メタデータ生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(
+                f"==> メタデータ生成スキップ完了 (処理時間: {elapsed_time:.2f}秒)"
+            )
             return str(metadata_path)
 
         try:
@@ -655,7 +657,9 @@ class LofiPostGenerator:
 
         if not self.success_music_gen:
             elapsed_time = time.time() - start_time
-            logger.info(f"==> アセット保存スキップ完了 (処理時間: {elapsed_time:.2f}秒)")
+            logger.info(
+                f"==> アセット保存スキップ完了 (処理時間: {elapsed_time:.2f}秒)"
+            )
             return
 
         stock_audio_dir = Config.STOCK_AUDIO_BASE_DIR / self.selected_prompt["type"]
@@ -714,7 +718,9 @@ class LofiPostGenerator:
             self.store_assets()
 
             total_elapsed_time = time.time() - total_start_time
-            logger.info(f"\n=== 実行終了: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===")
+            logger.info(
+                f"\n=== 実行終了: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ==="
+            )
             logger.info(f"=== 総処理時間: {total_elapsed_time:.2f}秒 ===")
 
         except Exception as e:

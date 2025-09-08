@@ -162,8 +162,8 @@ def main() -> None:
 
         tracks = get_audio_files(input_dir)
         if not tracks:
-        logger.info(f"==> {input_dir}内にmp3ファイルが見つかりません")
-        return
+            logger.info(f"==> {input_dir}内にmp3ファイルが見つかりません")
+            return
 
         logger.info(f"==> {len(tracks)}個のトラックを見つけました。結合を開始します...")
 

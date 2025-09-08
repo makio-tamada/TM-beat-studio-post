@@ -349,7 +349,9 @@ def main() -> None:
     prompt = record["music_prompt"]
 
     while total_duration < TARGET_DURATION_SEC:
-        logger.info(f"\n=== Iteration {iteration} | Accumulated {total_duration:.1f}s ===")
+        logger.info(
+            f"\n=== Iteration {iteration} | Accumulated {total_duration:.1f}s ==="
+        )
         logger.info(f"🎼 Creating task with prompt: {prompt!r}")
 
         task_id = create_music_task(prompt)
@@ -370,14 +372,18 @@ def main() -> None:
         filename = generate_unique_filename(title, today_folder, prompt)
         save_path = os.path.join(today_folder, filename)
 
-        logger.info(f"🎧 {os.path.splitext(filename)[0]} ({duration:.1f}s)  ⬇️ {audio_url}")
+        logger.info(
+            f"🎧 {os.path.splitext(filename)[0]} ({duration:.1f}s)  ⬇️ {audio_url}"
+        )
         download_audio(audio_url, save_path)
         logger.info(f"📁 Saved to {save_path}")
 
         total_duration += float(duration or 0)
         iteration += 1
 
-    logger.info(f"\n🎉 Generation finished. Total length: {total_duration/60:.1f} minutes")
+    logger.info(
+        f"\n🎉 Generation finished. Total length: {total_duration/60:.1f} minutes"
+    )
 
 
 def piapi_music_generation(
@@ -393,7 +399,9 @@ def piapi_music_generation(
     iteration = 1
 
     while total_duration < target_duration_sec:
-        logger.info(f"\n=== Iteration {iteration} | Accumulated {total_duration:.1f}s ===")
+        logger.info(
+            f"\n=== Iteration {iteration} | Accumulated {total_duration:.1f}s ==="
+        )
         logger.info(f"🎼 Creating task with prompt: {prompt!r}")
 
         max_retries = 3
@@ -449,7 +457,9 @@ def piapi_music_generation(
 
         iteration += 1
 
-    logger.info(f"\n🎉 Generation finished. Total length: {total_duration/60:.1f} minutes")
+    logger.info(
+        f"\n🎉 Generation finished. Total length: {total_duration/60:.1f} minutes"
+    )
 
 
 if __name__ == "__main__":
